@@ -19,7 +19,7 @@ import java.util.List;
 public class SimpleDnsServer {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SimpleDnsServer.class);
-    private static final int DNS_PORT = 5353;
+    private static final int DNS_PORT = 8000;
     private static final int BUFFER_SIZE = 512; // Standard DNS UDP buffer size
 
     // Our encoder/decoder

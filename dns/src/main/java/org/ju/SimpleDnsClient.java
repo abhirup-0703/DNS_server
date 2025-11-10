@@ -19,7 +19,7 @@ public class SimpleDnsClient {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SimpleDnsClient.class);
     private static final String SERVER_ADDRESS = "127.0.0.1";
-    private static final int SERVER_PORT = 5353;
+    private static final int SERVER_PORT = 8000;
     private static final int CLIENT_TIMEOUT_MS = 5000; // 5 seconds
 
     private static final DnsMessageCodec codec = new DnsMessageCodec();
