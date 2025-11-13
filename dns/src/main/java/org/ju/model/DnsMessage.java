@@ -1,5 +1,6 @@
 package org.ju.model;
 
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -10,14 +11,20 @@ public class DnsMessage {
     private final DnsHeader header;
     private final List<DnsQuestion> questions;
     private final List<DnsResourceRecord> answers;
-    // We will ignore Authority and Additional records for simplicity
-    // private final List<DnsResourceRecord> authorities;
-    // private final List<DnsResourceRecord> additionals;
+    
+    // NEW: The Authority Section (used for Referrals/NS records)
+    private final List<DnsResourceRecord> authorities;
 
-    public DnsMessage(DnsHeader header, List<DnsQuestion> questions, List<DnsResourceRecord> answers) {
+    // Updated Constructor to accept authorities
+    public DnsMessage(DnsHeader header, 
+                      List<DnsQuestion> questions, 
+                      List<DnsResourceRecord> answers, 
+                      List<DnsResourceRecord> authorities) {
         this.header = header;
         this.questions = questions;
         this.answers = answers;
+        // If null is passed, use an empty list to avoid NullPointerExceptions
+        this.authorities = (authorities != null) ? authorities : Collections.emptyList();
     }
 
     // --- Getters ---
@@ -33,6 +40,11 @@ public class DnsMessage {
     public List<DnsResourceRecord> getAnswers() {
         return answers;
     }
+    
+    // NEW: Getter for authorities
+    public List<DnsResourceRecord> getAuthorities() {
+        return authorities;
+    }
 
     @Override
     public String toString() {
@@ -40,6 +52,7 @@ public class DnsMessage {
                 "  header=" + header + "\n" +
                 "  questions=" + questions + "\n" +
                 "  answers=" + answers + "\n" +
+                "  authorities=" + authorities + "\n" +
                 '}';
     }
 }

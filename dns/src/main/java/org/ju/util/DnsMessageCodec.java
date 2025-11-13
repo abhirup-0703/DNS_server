@@ -5,35 +5,23 @@ import org.ju.model.*;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
-/**
- * Handles encoding (serializing) a DnsMessage object into a byte array
- * and decoding (parsing) a byte array into a DnsMessage object.
- */
 public class DnsMessageCodec {
 
-    // Standard DNS UDP packet size
     private static final int DNS_BUFFER_SIZE = 512;
 
-    /**
-     * Decodes a raw byte array from a UDP packet into a DnsMessage object.
-     *
-     * @param data The raw bytes from the packet.
-     * @return A parsed DnsMessage object.
-     */
     public DnsMessage decode(byte[] data) {
-        // DNS protocol uses Big Endian byte order
         ByteBuffer buffer = ByteBuffer.wrap(data);
         buffer.order(ByteOrder.BIG_ENDIAN);
 
         // --- 1. Parse Header ---
-        // Read 16-bit (2-byte) fields. & 0xFFFF treats them as unsigned.
         int id = buffer.getShort() & 0xFFFF;
         int flags = buffer.getShort() & 0xFFFF;
         int qdCount = buffer.getShort() & 0xFFFF;
         int anCount = buffer.getShort() & 0xFFFF;
-        int nsCount = buffer.getShort() & 0xFFFF;
+        int nsCount = buffer.getShort() & 0xFFFF; // Authority Count
         int arCount = buffer.getShort() & 0xFFFF;
 
         DnsHeader header = new DnsHeader(id, flags, qdCount, anCount, nsCount, arCount);
@@ -47,33 +35,35 @@ public class DnsMessageCodec {
             questions.add(new DnsQuestion(qName, qType, qClass));
         }
 
-        // --- 3. Parse Answers (Resource Records) ---
+        // --- 3. Parse Answers ---
         List<DnsResourceRecord> answers = new ArrayList<>(anCount);
         for (int i = 0; i < anCount; i++) {
-            String name = DnsLabelEncoder.decode(buffer);
-            int type = buffer.getShort() & 0xFFFF;
-            int rClass = buffer.getShort() & 0xFFFF;
-            // Read 32-bit (4-byte) TTL. & 0xFFFFFFFFL treats it as unsigned.
-            long ttl = buffer.getInt() & 0xFFFFFFFFL;
-            int rdLength = buffer.getShort() & 0xFFFF;
-            byte[] rData = new byte[rdLength];
-            buffer.get(rData);
-            
-            answers.add(new DnsResourceRecord(name, type, rClass, ttl, rdLength, rData));
+            answers.add(decodeRecord(buffer));
         }
         
-        // We ignore Authority (nsCount) and Additional (arCount) sections for this
-        // simple simulator.
+        // --- 4. Parse Authorities (NEW) ---
+        List<DnsResourceRecord> authorities = new ArrayList<>(nsCount);
+        for (int i = 0; i < nsCount; i++) {
+            authorities.add(decodeRecord(buffer));
+        }
 
-        return new DnsMessage(header, questions, answers);
+        // We still ignore Additional records (arCount) for now
+        
+        return new DnsMessage(header, questions, answers, authorities);
     }
 
-    /**
-     * Encodes a DnsMessage object into a raw byte array for sending in a UDP packet.
-     *
-     * @param message The DnsMessage object to encode.
-     * @return A byte array ready to be sent.
-     */
+    // Helper to decode a single Resource Record (used for both Answers and Authorities)
+    private DnsResourceRecord decodeRecord(ByteBuffer buffer) {
+        String name = DnsLabelEncoder.decode(buffer);
+        int type = buffer.getShort() & 0xFFFF;
+        int rClass = buffer.getShort() & 0xFFFF;
+        long ttl = buffer.getInt() & 0xFFFFFFFFL;
+        int rdLength = buffer.getShort() & 0xFFFF;
+        byte[] rData = new byte[rdLength];
+        buffer.get(rData);
+        return new DnsResourceRecord(name, type, rClass, ttl, rdLength, rData);
+    }
+
     public byte[] encode(DnsMessage message) {
         ByteBuffer buffer = ByteBuffer.allocate(DNS_BUFFER_SIZE);
         buffer.order(ByteOrder.BIG_ENDIAN);
@@ -84,8 +74,9 @@ public class DnsMessageCodec {
         buffer.putShort((short) header.getId());
         buffer.putShort((short) header.getFlags());
         buffer.putShort((short) header.getQdCount());
-        buffer.putShort((short) header.getAnCount());
-        buffer.putShort((short) header.getNsCount());
+        // Use the actual list sizes for counts
+        buffer.putShort((short) message.getAnswers().size());      // anCount
+        buffer.putShort((short) message.getAuthorities().size());  // nsCount (Updated)
         buffer.putShort((short) header.getArCount());
 
         // --- 2. Write Questions ---
@@ -95,20 +86,29 @@ public class DnsMessageCodec {
             buffer.putShort((short) question.getQClass());
         }
 
-        // --- 3. Write Answers (Resource Records) ---
+        // --- 3. Write Answers ---
         for (DnsResourceRecord record : message.getAnswers()) {
-            buffer.put(DnsLabelEncoder.encode(record.getName()));
-            buffer.putShort((short) record.getType());
-            buffer.putShort((short) record.getRClass());
-            buffer.putInt((int) record.getTtl());
-            buffer.putShort((short) record.getRdLength());
-            buffer.put(record.getRData());
+            encodeRecord(buffer, record);
+        }
+        
+        // --- 4. Write Authorities (NEW) ---
+        for (DnsResourceRecord record : message.getAuthorities()) {
+            encodeRecord(buffer, record);
         }
 
-        // --- 4. Prepare byte array for sending ---
-        buffer.flip(); // Mark the end of writing
+        buffer.flip();
         byte[] result = new byte[buffer.remaining()];
-        buffer.get(result); // Copy bytes into the final array
+        buffer.get(result);
         return result;
+    }
+
+    // Helper to write a record
+    private void encodeRecord(ByteBuffer buffer, DnsResourceRecord record) {
+        buffer.put(DnsLabelEncoder.encode(record.getName()));
+        buffer.putShort((short) record.getType());
+        buffer.putShort((short) record.getRClass());
+        buffer.putInt((int) record.getTtl());
+        buffer.putShort((short) record.getRdLength());
+        buffer.put(record.getRData());
     }
 }
