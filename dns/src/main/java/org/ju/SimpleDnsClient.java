@@ -17,11 +17,13 @@ import org.ju.model.DnsType;
 import org.ju.util.DnsMessageCodec;
 
 public class SimpleDnsClient {
-    private static final int SERVER_PORT = 5354;
+    private static final int SERVER_PORT = 5000;
     private static final DnsMessageCodec codec = new DnsMessageCodec();
     private static final Random random = new Random();
 
     public static void main(String[] args) throws Exception {
+        // let client decide which server to contact first
+
         try (Scanner scanner = new Scanner(System.in)) {
             boolean Continue = true;
             while (Continue) {
@@ -44,6 +46,8 @@ public class SimpleDnsClient {
                 
                 try (DatagramSocket socket = new DatagramSocket()) {
                     socket.setSoTimeout(2000);
+
+                    int nextPort = SERVER_PORT;
                     
                     while (!resolved && loopLimit > 0) {
                         System.out.println("\n[Step] Querying Server: " + currentNameServerIp);
@@ -54,7 +58,7 @@ public class SimpleDnsClient {
                         
                         // 2. Send
                         InetAddress ip = InetAddress.getByName(currentNameServerIp); 
-                        DatagramPacket packet = new DatagramPacket(qBytes, qBytes.length, ip, SERVER_PORT);
+                        DatagramPacket packet = new DatagramPacket(qBytes, qBytes.length, ip, nextPort);
                         socket.send(packet);
                         
                         // 3. Receive
@@ -82,12 +86,16 @@ public class SimpleDnsClient {
                         else if (response.getAuthorities() != null && !response.getAuthorities().isEmpty()) {
                             // --- REFERRAL CASE ---
                             DnsResourceRecord nsRecord = response.getAuthorities().get(0);
-                            String nsIp = InetAddress.getByAddress(nsRecord.getRData()).getHostAddress();
+                            byte[] rDataIP = new byte[]{nsRecord.getRData()[0], nsRecord.getRData()[1], nsRecord.getRData()[2], nsRecord.getRData()[3]};
+                            byte[] rDataPort = new byte[]{nsRecord.getRData()[4], nsRecord.getRData()[5]};
+                            String nsIp = InetAddress.getByAddress(rDataIP).getHostAddress();
+                            nextPort = rDataPort[0]*256 + rDataPort[1];
+                            String nsPort = Integer.toString(nextPort);
                             String nsZone = nsRecord.getName();
                             
                             System.out.println("-> STATUS: REFERRAL (Delegation)");
                             System.out.println("   Server doesn't know answer, but referred us to Zone: " + nsZone);
-                            System.out.println("   Next Name Server IP: " + nsIp);
+                            System.out.println("   Next Name Server IP: " + nsIp + " " + nsPort);
                             
                             // UPDATE TARGET IP FOR NEXT LOOP
                             currentNameServerIp = nsIp;

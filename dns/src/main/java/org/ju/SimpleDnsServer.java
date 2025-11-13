@@ -18,10 +18,20 @@ import org.slf4j.LoggerFactory;
 public class SimpleDnsServer {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SimpleDnsServer.class);
-    private static final int DNS_PORT = 5354;
+    private final int DNS_PORT;
+    private final String name;
+    private final DnsRecordStore recordStore = new DnsRecordStore();
     private static final DnsMessageCodec codec = new DnsMessageCodec();
 
-    public static void main(String[] args) {
+    public SimpleDnsServer(int port, String name){
+        DNS_PORT = port;
+        this.name = name;
+
+        // Add record for parent
+        // Call addRecord() for parent
+    }
+
+    public void start() {
         LOGGER.info("Starting Iterative DNS Server (Root/TLD/Auth Simulator) on port {}...", DNS_PORT);
 
         try (DatagramSocket socket = new DatagramSocket(DNS_PORT)) {
@@ -46,14 +56,14 @@ public class SimpleDnsServer {
         }
     }
 
-    private static DnsMessage processQuery(DnsMessage query) {
+    private DnsMessage processQuery(DnsMessage query) {
         DnsQuestion question = query.getQuestions().get(0);
         String requestedDomain = question.getQName();
         
         LOGGER.info("Received Query for: {}", requestedDomain);
 
         //Look for the best match in our "Zone" store
-        List<DnsResourceRecord> foundRecords = DnsRecordStore.findClosestMatch(requestedDomain);
+        List<DnsResourceRecord> foundRecords = recordStore.findClosestMatch(requestedDomain);
 
         List<DnsResourceRecord> answers = new ArrayList<>();
         List<DnsResourceRecord> authorities = new ArrayList<>(); // For NS records
@@ -95,5 +105,25 @@ public class SimpleDnsServer {
         // Assuming DnsMessage constructor: (header, questions, answers, authorities, additionals)
         // If your DnsMessage only accepts answers, update DnsMessage.java (see below).
         return new DnsMessage(header, List.of(question), answers, authorities);
+    }
+
+    public void addRecord(String name, int type, String dataIp, int port){
+        try{
+            recordStore.addRecord(name, type, dataIp, port);
+        }
+        catch(Exception e){}
+    }
+
+    public void addRecord(String name, int type, String dataIp){
+        try{
+            recordStore.addRecord(name, type, dataIp);
+        }
+        catch(Exception e){}
+    }
+
+    public static void main(String[] args) {
+        int port = 5000;
+        SimpleDnsServer server = new SimpleDnsServer(port, "DefaultServer");
+        server.start();
     }
 }

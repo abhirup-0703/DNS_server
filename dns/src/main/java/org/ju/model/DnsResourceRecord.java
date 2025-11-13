@@ -1,5 +1,6 @@
 package org.ju.model;
 
+import java.net.UnknownHostException;
 import java.util.Arrays;
 
 /**
@@ -61,7 +62,7 @@ public class DnsResourceRecord {
             // Try to format IPv4 for better logging
             try {
                 rDataString = java.net.InetAddress.getByAddress(rData).getHostAddress();
-            } catch (Exception e) {
+            } catch (UnknownHostException e) {
                 // ignore
             }
         }
