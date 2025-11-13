@@ -1,12 +1,14 @@
 package org.ju.util;
 
-import org.ju.model.*;
-
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
+
+import org.ju.model.DnsHeader;
+import org.ju.model.DnsMessage;
+import org.ju.model.DnsQuestion;
+import org.ju.model.DnsResourceRecord;
 
 public class DnsMessageCodec {
 
