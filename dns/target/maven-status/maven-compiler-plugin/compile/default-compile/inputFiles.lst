@@ -1,12 +1,11 @@
-C:\Users\User\Desktop\code_playground\toy_projects\DNS-server\DNS_server\dns\src\main\java\org\ju\App.java
-C:\Users\User\Desktop\code_playground\toy_projects\DNS-server\DNS_server\dns\src\main\java\org\ju\DnsRecordStore.java
-C:\Users\User\Desktop\code_playground\toy_projects\DNS-server\DNS_server\dns\src\main\java\org\ju\model\DnsClass.java
-C:\Users\User\Desktop\code_playground\toy_projects\DNS-server\DNS_server\dns\src\main\java\org\ju\model\DnsHeader.java
-C:\Users\User\Desktop\code_playground\toy_projects\DNS-server\DNS_server\dns\src\main\java\org\ju\model\DnsMessage.java
-C:\Users\User\Desktop\code_playground\toy_projects\DNS-server\DNS_server\dns\src\main\java\org\ju\model\DnsQuestion.java
-C:\Users\User\Desktop\code_playground\toy_projects\DNS-server\DNS_server\dns\src\main\java\org\ju\model\DnsResourceRecord.java
-C:\Users\User\Desktop\code_playground\toy_projects\DNS-server\DNS_server\dns\src\main\java\org\ju\model\DnsType.java
-C:\Users\User\Desktop\code_playground\toy_projects\DNS-server\DNS_server\dns\src\main\java\org\ju\SimpleDnsClient.java
-C:\Users\User\Desktop\code_playground\toy_projects\DNS-server\DNS_server\dns\src\main\java\org\ju\SimpleDnsServer.java
-C:\Users\User\Desktop\code_playground\toy_projects\DNS-server\DNS_server\dns\src\main\java\org\ju\util\DnsLabelEncoder.java
-C:\Users\User\Desktop\code_playground\toy_projects\DNS-server\DNS_server\dns\src\main\java\org\ju\util\DnsMessageCodec.java
+D:\DNS Project\dns\src\main\java\org\ju\DnsRecordStore.java
+D:\DNS Project\dns\src\main\java\org\ju\model\DnsClass.java
+D:\DNS Project\dns\src\main\java\org\ju\model\DnsHeader.java
+D:\DNS Project\dns\src\main\java\org\ju\model\DnsMessage.java
+D:\DNS Project\dns\src\main\java\org\ju\model\DnsQuestion.java
+D:\DNS Project\dns\src\main\java\org\ju\model\DnsResourceRecord.java
+D:\DNS Project\dns\src\main\java\org\ju\model\DnsType.java
+D:\DNS Project\dns\src\main\java\org\ju\SimpleDnsClient.java
+D:\DNS Project\dns\src\main\java\org\ju\SimpleDnsServer.java
+D:\DNS Project\dns\src\main\java\org\ju\util\DnsLabelEncoder.java
+D:\DNS Project\dns\src\main\java\org\ju\util\DnsMessageCodec.java

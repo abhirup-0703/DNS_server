@@ -1,4 +1,3 @@
-org\ju\App.class
 org\ju\DnsRecordStore.class
 org\ju\SimpleDnsServer.class
 org\ju\model\DnsMessage.class

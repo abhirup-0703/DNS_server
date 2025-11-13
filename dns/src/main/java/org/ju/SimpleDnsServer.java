@@ -13,12 +13,12 @@ import java.util.List;
 
 public class SimpleDnsServer {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(SimpleDnsServer.class);
+    // private static final Logger LOGGER = LoggerFactory.getLogger(SimpleDnsServer.class);
     private static final int DNS_PORT = 5354;
     private static final DnsMessageCodec codec = new DnsMessageCodec();
 
     public static void main(String[] args) {
-        LOGGER.info("Starting Iterative DNS Server (Root/TLD/Auth Simulator) on port {}...", DNS_PORT);
+        // LOGGER.info("Starting Iterative DNS Server (Root/TLD/Auth Simulator) on port {}...", DNS_PORT);
 
         try (DatagramSocket socket = new DatagramSocket(DNS_PORT)) {
             while (true) {
@@ -34,11 +34,11 @@ public class SimpleDnsServer {
                     DatagramPacket outPacket = new DatagramPacket(outBuffer, outBuffer.length, inPacket.getAddress(), inPacket.getPort());
                     socket.send(outPacket);
                 } catch (Exception e) {
-                    LOGGER.error("Error processing packet", e);
+                    // LOGGER.error("Error processing packet", e);
                 }
             }
         } catch (IOException e) {
-            LOGGER.error("Server error", e);
+            // LOGGER.error("Server error", e);
         }
     }
 
@@ -46,7 +46,7 @@ public class SimpleDnsServer {
         DnsQuestion question = query.getQuestions().get(0);
         String requestedDomain = question.getQName();
         
-        LOGGER.info("Received Query for: {}", requestedDomain);
+        // LOGGER.info("Received Query for: {}", requestedDomain);
 
         // Look for the best match in our "Zone" store
         List<DnsResourceRecord> foundRecords = DnsRecordStore.findClosestMatch(requestedDomain);
@@ -64,13 +64,13 @@ public class SimpleDnsServer {
                 // 1. Exact Match (A Record) -> We are Authoritative
                 answers.addAll(foundRecords);
                 flags |= 0x0400; // AA=1 (Authoritative Answer)
-                LOGGER.info("  -> Found Exact A-Record match.");
+                // LOGGER.info("  -> Found Exact A-Record match.");
             } 
             else if (firstRec.getType() == DnsType.NS) {
                 // 2. Found NS Record -> We are delegating (Referral)
                 authorities.addAll(foundRecords);
                 // AA flag is NOT set because we are referring, not answering.
-                LOGGER.info("  -> Found Referral (NS) for zone: {}", firstRec.getName());
+                // LOGGER.info("  -> Found Referral (NS) for zone: {}", firstRec.getName());
             } 
             else {
                 // 3. Found something else (unlikely in this sim)
@@ -78,7 +78,7 @@ public class SimpleDnsServer {
             }
         } else {
             // 4. Totally Unknown
-            LOGGER.info("  -> No record found.");
+            // LOGGER.info("  -> No record found.");
             rcode = 3; // NXDOMAIN
         }
 
