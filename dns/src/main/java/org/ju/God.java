@@ -31,6 +31,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Comparator;
+import java.util.List; // Add this import
 
 /**
  * A GUI dashboard to manage all SimpleDnsServer instances.
@@ -71,7 +72,7 @@ public class God extends JFrame {
         gbc.fill = GridBagConstraints.HORIZONTAL;
 
         // --- Section 1: Start Predefined Servers ---
-        startPredefinedButton = new JButton("Start All Predefined Servers");
+        startPredefinedButton = new JButton("Start Servers From Storage"); // <-- Text Changed
         gbc.gridx = 0;
         gbc.gridy = 0;
         gbc.gridwidth = 2; // Span 2 columns
@@ -168,7 +169,7 @@ public class God extends JFrame {
         add(scrollPane, BorderLayout.CENTER);
 
         // 3. --- Attach Action Listeners ---
-        startPredefinedButton.addActionListener(e -> startPredefinedServers());
+        startPredefinedButton.addActionListener(e -> startServersFromStorage()); // <-- Method name changed
         addRecordButton.addActionListener(e -> addNewRecord());
         createServerButton.addActionListener(e -> createNewServer());
 
@@ -211,58 +212,60 @@ public class God extends JFrame {
     }
 
     /**
-     * ACTION: Creates and starts the 6 default servers and records.
+     * ACTION: Scans the 'dns_storage' directory and starts servers for any
+     * existing .dns files.
      */
-    private void startPredefinedServers() {
-        log("--- Clearing old 'dns_storage' directory... ---");
-        try {
-            Path storageDir = Paths.get("dns_storage");
-            if (Files.exists(storageDir)) {
-                // Recursively delete directory
-                Files.walk(storageDir)
-                    .sorted(Comparator.reverseOrder())
-                    .map(Path::toFile)
-                    .forEach(java.io.File::delete);
+    private void startServersFromStorage() {
+        log("--- Scanning 'dns_storage' for existing servers... ---");
+        Path storageDir = Paths.get("dns_storage");
+
+        if (!Files.exists(storageDir) || !Files.isDirectory(storageDir)) {
+            log("INFO: 'dns_storage' directory not found. No servers to start.");
+            // Button's job is done, even if it found nothing.
+            startPredefinedButton.setEnabled(false);
+            return;
+        }
+
+        int serversFound = 0;
+        try (var stream = Files.list(storageDir)) {
+            List<Path> files = stream
+                                .filter(p -> p.getFileName().toString().endsWith(".dns"))
+                                .toList();
+            
+            for (Path path : files) {
+                String fileName = path.getFileName().toString();
+                try {
+                    String portStr = fileName.substring(0, fileName.length() - 4);
+                    int port = Integer.parseInt(portStr);
+                    
+                    // We don't know the "name" (e.g., "google.com.") from the file,
+                    // so we'll just name it based on its port.
+                    String serverName = "Server-" + port; 
+                    
+                    // This helper adds to 'servers', 'serverThreads', and GUI combo box
+                    addServer(port, serverName); 
+                    serversFound++;
+                    
+                } catch (NumberFormatException e) {
+                    log("Skipping invalid file name: " + fileName);
+                }
             }
-            log("Old storage cleared.");
         } catch (IOException e) {
-            log("Error clearing storage: " + e.getMessage());
+            log("Error reading dns_storage directory: " + e.getMessage());
+            return;
         }
 
-        log("--- Creating predefined servers... ---");
-        
-        // 1. Create servers
-        SimpleDnsServer root = addServer(5000, ".");
-        SimpleDnsServer com = addServer(5001, "com.");
-        SimpleDnsServer org = addServer(5002, "org.");
-        SimpleDnsServer google = addServer(5003, "google.com.");
-        SimpleDnsServer example = addServer(5004, "example.com.");
-        SimpleDnsServer test = addServer(5005, "test.org.");
-
-        // 2. Add records
-        log("Adding records to servers (writing to files)...");
-        root.addRecord("com.", DnsType.NS, "127.0.0.1", 5001);
-        root.addRecord("org.", DnsType.NS, "127.0.0.1", 5002);
-        
-        com.addRecord("google.com.", DnsType.NS, "127.0.0.1", 5003);
-        com.addRecord("example.com.", DnsType.NS, "127.0.0.1", 5004);
-        
-        org.addRecord("test.org.", DnsType.NS, "127.0.0.1", 5005);
-        
-        google.addRecord("www.google.com.", DnsType.A, "8.8.8.8");
-        
-        example.addRecord("www.example.com.", DnsType.A, "192.168.1.10");
-        example.addRecord("mail.example.com.", DnsType.A, "192.168.1.20");
-        
-        test.addRecord("www.test.org.", DnsType.A, "10.0.0.50");
-
-        // 3. Start all threads
-        log("Starting all server threads...");
-        for (Thread t : serverThreads) {
-            t.start();
+        if (serversFound == 0) {
+            log("No .dns files found in storage. No servers started.");
+        } else {
+            // 3. Start all threads
+            log("Starting all " + serversFound + " server threads...");
+            for (Thread t : serverThreads) {
+                t.start();
+            }
+            log("--- All " + serversFound + " stored servers are running! ---");
         }
         
-        log("--- All predefined servers are running! ---");
         startPredefinedButton.setEnabled(false); // Only run once
     }
 
