@@ -26,9 +26,6 @@ public class SimpleDnsServer {
     public SimpleDnsServer(int port, String name){
         DNS_PORT = port;
         this.name = name;
-
-        // Add record for parent
-        // Call addRecord() for parent
     }
 
     public void start() {
