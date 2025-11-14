@@ -1,0 +1,16 @@
+org\ju\model\DnsResourceRecord.class
+org\ju\SimpleDnsClient.class
+org\ju\model\DnsType.class
+org\ju\model\DnsHeader.class
+org\ju\util\DnsMessageCodec.class
+org\ju\DnsClientGui.class
+org\ju\util\DnsLabelEncoder.class
+org\ju\DnsRecordStore.class
+org\ju\SimpleDnsServer.class
+org\ju\model\DnsMessage.class
+org\ju\DnsClientGui$1.class
+org\ju\model\DnsQuestion.class
+org\ju\DnsClientGui$DnsQueryWorker.class
+org\ju\model\DnsClass.class
+org\ju\God.class
+org\ju\SimpleDnsClient$LogCallback.class

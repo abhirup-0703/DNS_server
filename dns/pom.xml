@@ -40,6 +40,12 @@
           <scope>test</scope>
         </dependency>
 
+        <dependency>
+            <groupId>org.mongodb</groupId>
+            <artifactId>mongodb-driver-sync</artifactId>
+            <version>5.1.2</version> <!-- Use a recent version -->
+        </dependency>
+
     </dependencies>
 
     <build>
