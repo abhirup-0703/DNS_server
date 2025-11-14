@@ -20,12 +20,14 @@ public class SimpleDnsServer {
     private static final Logger LOGGER = LoggerFactory.getLogger(SimpleDnsServer.class);
     private final int DNS_PORT;
     private final String name;
-    private final DnsRecordStore recordStore = new DnsRecordStore();
+    private final DnsRecordStore recordStore; // Remove initialization here
     private static final DnsMessageCodec codec = new DnsMessageCodec();
 
     public SimpleDnsServer(int port, String name){
         DNS_PORT = port;
         this.name = name;
+        // Pass the port to the DnsRecordStore constructor
+        this.recordStore = new DnsRecordStore(port); 
     }
 
     public String getName() {
@@ -42,7 +44,7 @@ public class SimpleDnsServer {
     }
 
     public void start() {
-        LOGGER.info("Starting Iterative DNS Server (Root/TLD/Auth Simulator) on port {}...", DNS_PORT);
+        LOGGER.info("Starting Persistent DNS Server ({}) on port {}...", this.name, DNS_PORT);
 
         try (DatagramSocket socket = new DatagramSocket(DNS_PORT)) {
             while (true) {
@@ -62,7 +64,7 @@ public class SimpleDnsServer {
                 }
             }
         } catch (IOException e) {
-            LOGGER.error("Server error", e);
+            LOGGER.error("Server on port {} failed to start: {}", DNS_PORT, e.getMessage());
         }
     }
 
@@ -70,7 +72,7 @@ public class SimpleDnsServer {
         DnsQuestion question = query.getQuestions().get(0);
         String requestedDomain = question.getQName();
         
-        LOGGER.info("Received Query for: {}", requestedDomain);
+        LOGGER.info("[{}:{}] Received Query for: {}", this.name, DNS_PORT, requestedDomain);
 
         //Look for the best match in our "Zone" store
         List<DnsResourceRecord> foundRecords = recordStore.findClosestMatch(requestedDomain);
@@ -88,21 +90,22 @@ public class SimpleDnsServer {
                 // 1. Exact Match (A Record) -> We are Authoritative
                 answers.addAll(foundRecords);
                 flags |= 0x0400; // AA=1 (Authoritative Answer)
-                LOGGER.info("  -> Found Exact A-Record match.");
+                LOGGER.info("  -> Found Exact A-Record match. Sending Answer.");
             } 
             else if (firstRec.getType() == DnsType.NS) {
                 // 2. Found NS Record -> We are delegating (Referral)
                 authorities.addAll(foundRecords);
                 // AA flag is NOT set because we are referring, not answering.
-                LOGGER.info("  -> Found Referral (NS) for zone: {}", firstRec.getName());
+                LOGGER.info("  -> Found Referral (NS) for zone: {}. Sending Authority.", firstRec.getName());
             } 
             else {
                 // 3. Found something else (unlikely in this sim)
+                LOGGER.warn("  -> Found record, but not A or NS? Type: {}", DnsType.toString(firstRec.getType()));
                 rcode = 3; // NXDOMAIN
             }
         } else {
             // 4. Totally Unknown
-            LOGGER.info("  -> No record found.");
+            LOGGER.info("  -> No record found. Sending NXDOMAIN.");
             rcode = 3; // NXDOMAIN
         }
 
@@ -110,10 +113,6 @@ public class SimpleDnsServer {
 
         DnsHeader header = new DnsHeader(query.getHeader().getId(), flags, 1, answers.size(), authorities.size(), 0);
         
-        // Note: We pass 'authorities' list to the DnsMessage constructor now
-        // You might need to update DnsMessage constructor to accept Authority list if you haven't yet.
-        // Assuming DnsMessage constructor: (header, questions, answers, authorities, additionals)
-        // If your DnsMessage only accepts answers, update DnsMessage.java (see below).
         return new DnsMessage(header, List.of(question), answers, authorities);
     }
 
@@ -121,19 +120,30 @@ public class SimpleDnsServer {
         try{
             recordStore.addRecord(name, type, dataIp, port);
         }
-        catch(Exception e){}
+        catch(Exception e){
+            LOGGER.error("Failed to add NS record: {}", e.getMessage());
+        }
     }
 
     public void addRecord(String name, int type, String dataIp){
         try{
             recordStore.addRecord(name, type, dataIp);
         }
-        catch(Exception e){}
+        catch(Exception e){
+            LOGGER.error("Failed to add A record: {}", e.getMessage());
+        }
     }
 
     public static void main(String[] args) {
         int port = 5000;
-        SimpleDnsServer server = new SimpleDnsServer(port, "DefaultServer");
+        if (args.length > 0) {
+            try {
+                port = Integer.parseInt(args[0]);
+            } catch (NumberFormatException e) {
+                LOGGER.error("Invalid port specified, using default 5000.");
+            }
+        }
+        SimpleDnsServer server = new SimpleDnsServer(port, "DefaultServer-" + port);
         server.start();
     }
 }

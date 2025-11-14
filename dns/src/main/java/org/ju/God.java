@@ -26,6 +26,12 @@ import javax.swing.UnsupportedLookAndFeelException;
 
 import org.ju.model.DnsType;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Comparator;
+
 /**
  * A GUI dashboard to manage all SimpleDnsServer instances.
  * This class replaces the old God.java.
@@ -208,6 +214,21 @@ public class God extends JFrame {
      * ACTION: Creates and starts the 6 default servers and records.
      */
     private void startPredefinedServers() {
+        log("--- Clearing old 'dns_storage' directory... ---");
+        try {
+            Path storageDir = Paths.get("dns_storage");
+            if (Files.exists(storageDir)) {
+                // Recursively delete directory
+                Files.walk(storageDir)
+                    .sorted(Comparator.reverseOrder())
+                    .map(Path::toFile)
+                    .forEach(java.io.File::delete);
+            }
+            log("Old storage cleared.");
+        } catch (IOException e) {
+            log("Error clearing storage: " + e.getMessage());
+        }
+
         log("--- Creating predefined servers... ---");
         
         // 1. Create servers
@@ -219,7 +240,7 @@ public class God extends JFrame {
         SimpleDnsServer test = addServer(5005, "test.org.");
 
         // 2. Add records
-        log("Adding records to servers...");
+        log("Adding records to servers (writing to files)...");
         root.addRecord("com.", DnsType.NS, "127.0.0.1", 5001);
         root.addRecord("org.", DnsType.NS, "127.0.0.1", 5002);
         
