@@ -33,10 +33,6 @@ import java.nio.file.Paths;
 import java.util.Comparator;
 import java.util.List; // Add this import
 
-/**
- * A GUI dashboard to manage all SimpleDnsServer instances.
- * This class replaces the old God.java.
- */
 public class God extends JFrame {
 
     // --- Core Server State ---
@@ -184,9 +180,6 @@ public class God extends JFrame {
         setVisible(true);
     }
 
-    /**
-     * Helper method to log to the GUI's text area.
-     */
     private void log(String message) {
         // Ensure log updates happen on the Event Dispatch Thread
         SwingUtilities.invokeLater(() -> {
@@ -195,10 +188,6 @@ public class God extends JFrame {
         });
     }
 
-    /**
-     * Core logic to create a server, add it to lists, and update the GUI.
-     * Does NOT start the thread.
-     */
     private SimpleDnsServer addServer(int port, String name) {
         SimpleDnsServer server = new SimpleDnsServer(port, name);
         servers.add(server);
@@ -211,10 +200,6 @@ public class God extends JFrame {
         return server;
     }
 
-    /**
-     * ACTION: Scans the 'dns_storage' directory and starts servers for any
-     * existing .dns files.
-     */
     private void startServersFromStorage() {
         log("--- Scanning 'dns_storage' for existing servers... ---");
         Path storageDir = Paths.get("dns_storage");
@@ -269,9 +254,6 @@ public class God extends JFrame {
         startPredefinedButton.setEnabled(false); // Only run once
     }
 
-    /**
-     * ACTION: Creates and starts a single new server.
-     */
     private void createNewServer() {
         try {
             String name = newServerNameField.getText().trim();
@@ -289,6 +271,9 @@ public class God extends JFrame {
             // It's the last one added to the list
             serverThreads.get(serverThreads.size() - 1).start();
             
+            registerWithParent(newServer);
+            // ---------------
+            
             log("--- New server " + newServer + " is running! ---");
 
         } catch (NumberFormatException e) {
@@ -296,9 +281,6 @@ public class God extends JFrame {
         }
     }
 
-    /**
-     * ACTION: Adds a new A or NS record to the selected server.
-     */
     private void addNewRecord() {
         SimpleDnsServer selectedServer = (SimpleDnsServer) serverSelectorCombo.getSelectedItem();
         if (selectedServer == null) {
@@ -329,6 +311,62 @@ public class God extends JFrame {
             JOptionPane.showMessageDialog(this, "Invalid Port Number for NS record.", "Error", JOptionPane.ERROR_MESSAGE);
         }
     }
+
+    private String getParentDomain(String domain) {
+        if (domain == null || domain.isEmpty() || domain.equals(".")) {
+            return null; // Root has no parent
+        }
+        int dotIndex = domain.indexOf('.');
+        if (dotIndex == -1 || dotIndex == domain.length() - 1) {
+            // This is a TLD (like "com.") or invalid, its parent is root.
+            return ".";
+        }
+        return domain.substring(dotIndex + 1);
+    }
+
+    private SimpleDnsServer findBestParentServer(String domain) {
+        SimpleDnsServer bestMatch = null;
+        int bestMatchLength = -1;
+
+        for (SimpleDnsServer server : servers) {
+            String serverName = server.getName();
+            // Check if the server's name is a suffix of the domain
+            if (domain.endsWith(serverName)) {
+                if (serverName.length() > bestMatchLength) {
+                    bestMatch = server;
+                    bestMatchLength = serverName.length();
+                }
+            }
+        }
+        return bestMatch;
+    }
+
+    private void registerWithParent(SimpleDnsServer newServer) {
+        String name = newServer.getName();
+        int port = newServer.getPort();
+
+        if (name.equals(".")) {
+            return; // Root server doesn't get registered with a parent.
+        }
+
+        String parentDomain = getParentDomain(name);
+        if (parentDomain == null) {
+            return; // Should not happen if not root, but good to check.
+        }
+        
+        SimpleDnsServer parentServer = findBestParentServer(parentDomain);
+
+        if (parentServer != null) {
+            log("Auto-registering NS record for '" + name + "' on parent server '" + parentServer.getName() + "'");
+            // Add an NS record to the parent server, pointing to the new server
+            parentServer.addRecord(name, DnsType.NS, "127.0.0.1", port);
+        } else {
+            log("WARN: Could not find a running parent server for '" + name + "'. NS record not auto-added.");
+        }
+    }
+
+    // --- END NEW HELPER METHODS ---
+
 
     public static void main(String[] args) {
         try {

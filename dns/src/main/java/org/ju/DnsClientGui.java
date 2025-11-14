@@ -57,8 +57,6 @@ public class DnsClientGui extends JFrame {
         resultDisplay.setBorder(BorderFactory.createTitledBorder("Final Result"));
         topPanel.add(resultDisplay, BorderLayout.CENTER);
         
-        // --- Bottom Panel (Log Table) ---
-        // 1. Updated column names
         String[] columnNames = {"Step", "Server Queried", "Log"};
         
         tableModel = new DefaultTableModel(columnNames, 0) {
@@ -70,23 +68,20 @@ public class DnsClientGui extends JFrame {
         logTable = new JTable(tableModel);
         logTable.setFont(new Font("Monospaced", Font.PLAIN, 12));
         
-        // 2. Updated column widths for 3 columns
-        logTable.getColumnModel().getColumn(0).setMaxWidth(50); // Step
-        logTable.getColumnModel().getColumn(1).setPreferredWidth(150); // Server
-        logTable.getColumnModel().getColumn(2).setPreferredWidth(500); // Log
+        logTable.getColumnModel().getColumn(0).setMaxWidth(50);
+        logTable.getColumnModel().getColumn(1).setPreferredWidth(150); 
+        logTable.getColumnModel().getColumn(2).setPreferredWidth(500);
         
         logTable.setFillsViewportHeight(true);
         
         JScrollPane scrollPane = new JScrollPane(logTable);
         scrollPane.setBorder(BorderFactory.createEmptyBorder(0, 10, 10, 10));
 
-        // --- Split Pane ---
         JSplitPane splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT, topPanel, scrollPane);
         splitPane.setDividerLocation(150);
         
         add(splitPane, BorderLayout.CENTER);
         
-        // --- Action Listener ---
         resolveButton.addActionListener(e -> startQuery());
         getRootPane().setDefaultButton(resolveButton);
 
@@ -102,8 +97,7 @@ public class DnsClientGui extends JFrame {
             return;
         }
 
-        // Reset GUI state
-        tableModel.setRowCount(0); // Clear the table
+        tableModel.setRowCount(0);
         resultDisplay.setText("Resolving " + domain + "...");
         resultDisplay.setBackground(UIManager.getColor("TextField.background"));
         resolveButton.setEnabled(false);

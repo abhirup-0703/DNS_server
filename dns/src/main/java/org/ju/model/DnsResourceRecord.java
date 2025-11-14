@@ -3,10 +3,6 @@ package org.ju.model;
 import java.net.UnknownHostException;
 import java.util.Arrays;
 
-/**
- * Represents a single Resource Record (RR) in the Answer, Authority,
- * or Additional sections of a DNS message.
- */
 public class DnsResourceRecord {
 
     // Variable length fields from the Question section

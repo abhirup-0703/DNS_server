@@ -17,20 +17,12 @@ import org.ju.model.DnsType; // Added import
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * Stores DNS records organized by domain name, persistent to a file.
- * Each server port gets its own file in the 'dns_storage' directory.
- */
 public class DnsRecordStore {
     
     private static final Logger LOGGER = LoggerFactory.getLogger(DnsRecordStore.class);
     private static final Path STORAGE_DIR = Paths.get("dns_storage");
     private final Path zoneFile;
 
-    /**
-     * Creates a record store linked to a specific port's file.
-     * @param port The port number of the server, used to name the file.
-     */
     public DnsRecordStore(int port) {
         try {
             Files.createDirectories(STORAGE_DIR);
@@ -45,10 +37,6 @@ public class DnsRecordStore {
         }
     }
 
-    /**
-     * Reads all records from the persistent file and loads them into a map.
-     * @return A map of Domain Name -> List of Records
-     */
     private Map<String, List<DnsResourceRecord>> loadRecordsFromFile() {
         Map<String, List<DnsResourceRecord>> zoneData = new HashMap<>();
         List<String> lines;
@@ -100,9 +88,6 @@ public class DnsRecordStore {
         return zoneData;
     }
 
-    /**
-     * Appends a new NS record to the persistent file.
-     */
     public void addRecord(String name, int type, String dataIp, int port) throws Exception {
         // We just write to the file. The original conversion logic is now in loadRecordsFromFile.
         String line = String.format("%s,%d,%s,%d\n", name, type, dataIp, port);
@@ -115,9 +100,6 @@ public class DnsRecordStore {
         }
     }
 
-    /**
-     * Appends a new A record to the persistent file.
-     */
     public void addRecord(String name, int type, String dataIp) throws Exception {
         // Use 0 as a placeholder for port in A records
         String line = String.format("%s,%d,%s,%d\n", name, type, dataIp, 0);
@@ -130,15 +112,7 @@ public class DnsRecordStore {
         }
     }
 
-    /**
-     * Iterative Lookup Logic:
-     * Loads all records from file, then finds the exact match.
-     * If not found, strips the prefix (e.g., www.google.com -> google.com)
-     * to find the closest "Parent" that has an NS record.
-     */
     public List<DnsResourceRecord> findClosestMatch(String domain) {
-        // Load fresh data from file *every time* a query comes in.
-        // This ensures new records added from the God GUI are found.
         Map<String, List<DnsResourceRecord>> zoneData = loadRecordsFromFile();
         
         if (zoneData.isEmpty()) {
@@ -152,10 +126,8 @@ public class DnsRecordStore {
                 return zoneData.get(current);
             }
 
-            // Logic to strip the first label: "www.example.com." -> "example.com."
             int dotIndex = current.indexOf('.');
             if (dotIndex == -1 || dotIndex == current.length() - 1) {
-                // We reached the end or just a dot. Check root "."
                 return zoneData.get("."); // Might return null if root isn't defined
             }
             current = current.substring(dotIndex + 1);

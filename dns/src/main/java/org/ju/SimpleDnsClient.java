@@ -25,28 +25,10 @@ public class SimpleDnsClient {
     private static final DnsMessageCodec codec = new DnsMessageCodec();
     private static final Random random = new Random();
 
-    /**
-     * A callback interface to allow the resolver to send
-     * structured log data back to the caller (e.g., the GUI).
-     */
     public interface LogCallback {
-        /**
-         * Called after each query step is completed.
-         * @param step The step number.
-         * @param serverQueried The "ip:port" of the server that was queried.
-         * @param logMessage The result of that query (e.g., "REFERRAL...", "SUCCESS...").
-         */
         void onStepComplete(int step, String serverQueried, String logMessage);
     }
 
-    /**
-     * Performs the full iterative DNS query.
-     *
-     * @param domain The domain name to resolve.
-     * @param logger A LogCallback instance to report progress.
-     * @return The final IP address as a String.
-     * @throws Exception if the query fails (timeout, NXDOMAIN, etc.).
-     */
     public String resolve(String domain, LogCallback logger) throws Exception {
         String targetDomain = domain.endsWith(".") ? domain : domain + ".";
         String currentNameServerIp = ROOT_SERVER_IP;
@@ -96,7 +78,6 @@ public class SimpleDnsClient {
                     return ipAddr; // Success!
                     
                 } else if (response.getAuthorities() != null && !response.getAuthorities().isEmpty()) {
-                    // --- REFERRAL CASE ---
                     DnsResourceRecord nsRecord = response.getAuthorities().get(0);
                     
                     byte[] rData = nsRecord.getRData();

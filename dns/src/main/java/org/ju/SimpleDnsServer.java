@@ -87,19 +87,15 @@ public class SimpleDnsServer {
             DnsResourceRecord firstRec = foundRecords.get(0);
 
             if (firstRec.getName().equals(requestedDomain) && firstRec.getType() == DnsType.A) {
-                // 1. Exact Match (A Record) -> We are Authoritative
                 answers.addAll(foundRecords);
                 flags |= 0x0400; // AA=1 (Authoritative Answer)
                 LOGGER.info("  -> Found Exact A-Record match. Sending Answer.");
             } 
             else if (firstRec.getType() == DnsType.NS) {
-                // 2. Found NS Record -> We are delegating (Referral)
                 authorities.addAll(foundRecords);
-                // AA flag is NOT set because we are referring, not answering.
                 LOGGER.info("  -> Found Referral (NS) for zone: {}. Sending Authority.", firstRec.getName());
             } 
             else {
-                // 3. Found something else (unlikely in this sim)
                 LOGGER.warn("  -> Found record, but not A or NS? Type: {}", DnsType.toString(firstRec.getType()));
                 rcode = 3; // NXDOMAIN
             }
