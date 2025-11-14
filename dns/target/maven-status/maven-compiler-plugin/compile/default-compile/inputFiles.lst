@@ -1,0 +1,13 @@
+D:\Code Stuff\Projects\DNS\dns\src\main\java\org\ju\DnsClientGui.java
+D:\Code Stuff\Projects\DNS\dns\src\main\java\org\ju\DnsRecordStore.java
+D:\Code Stuff\Projects\DNS\dns\src\main\java\org\ju\God.java
+D:\Code Stuff\Projects\DNS\dns\src\main\java\org\ju\model\DnsClass.java
+D:\Code Stuff\Projects\DNS\dns\src\main\java\org\ju\model\DnsHeader.java
+D:\Code Stuff\Projects\DNS\dns\src\main\java\org\ju\model\DnsMessage.java
+D:\Code Stuff\Projects\DNS\dns\src\main\java\org\ju\model\DnsQuestion.java
+D:\Code Stuff\Projects\DNS\dns\src\main\java\org\ju\model\DnsResourceRecord.java
+D:\Code Stuff\Projects\DNS\dns\src\main\java\org\ju\model\DnsType.java
+D:\Code Stuff\Projects\DNS\dns\src\main\java\org\ju\SimpleDnsClient.java
+D:\Code Stuff\Projects\DNS\dns\src\main\java\org\ju\SimpleDnsServer.java
+D:\Code Stuff\Projects\DNS\dns\src\main\java\org\ju\util\DnsLabelEncoder.java
+D:\Code Stuff\Projects\DNS\dns\src\main\java\org\ju\util\DnsMessageCodec.java

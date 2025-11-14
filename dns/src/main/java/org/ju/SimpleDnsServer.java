@@ -28,6 +28,19 @@ public class SimpleDnsServer {
         this.name = name;
     }
 
+    public String getName() {
+        return name;
+    }
+
+    public int getPort() {
+        return DNS_PORT;
+    }
+
+    @Override
+    public String toString() {
+        return name + " (Port: " + DNS_PORT + ")";
+    }
+
     public void start() {
         LOGGER.info("Starting Iterative DNS Server (Root/TLD/Auth Simulator) on port {}...", DNS_PORT);
 

@@ -31,7 +31,7 @@ public class DnsClientGui extends JFrame {
     private final SimpleDnsClient queryResolver;
 
     public DnsClientGui() {
-        setTitle("Iterative DNS Client");
+        setTitle("DNS Client");
         setSize(800, 600); // Made wider for the 3 columns
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         
