@@ -1,5 +1,267 @@
-Recursive DNS SimulatorThis project is a Java-based application that simulates the full, iterative DNS resolution process. It features a graphical client for making queries and a "God-view" server dashboard for managing a network of persistent, recursively-created DNS servers.The system's most powerful feature is its ability to automatically create and link parent servers. If you add a record for www.a.b.com, the system will automatically create the a.b.com and b.com servers if they don't already exist, and chain the necessary NS (Name Server) referral records.FeaturesIterative DNS Client: A Swing GUI (DnsClientGui) that visualizes the step-by-step iterative query process, showing each server referral.Server Management Dashboard: A "God" Swing GUI (God) that allows an administrator to manage all running DNS servers.Persistent File-Based Storage: DNS records are not stored in memory. Each server's records are saved to a dedicated file in the dns_storage directory (e.g., 5000.dns), making the server network persistent.On-Demand Recursive Server Creation: The God dashboard's most advanced feature. When you add a record for a deep domain (e.g., www.xyz.qwerty.com), the system automatically:Creates a server for xyz.qwerty.com on a new port.Recursively creates a server for its parent, qwerty.com.Recursively creates a server for its parent, com.Links each server to its parent with the correct NS referral record.Dynamic Record Loading: Servers read their record files on every query, meaning records added via the God GUI are reflected instantly without server restarts.System Flow: A Detailed WalkthroughThe entire system is designed to mimic the real-world chain of trust in DNS. Here is a complete walkthrough from setup to resolution.Part 1: The Setup (Admin using God.java)Start the Dashboard: The administrator launches the God application (java org.ju.God).Initialize the Root: The entire DNS system needs an entry point. The admin must create the root server.Action: In the "Create New Server" panel, the admin enters:Name: .Port: 5000 (This port is hardcoded as the starting point in the SimpleDnsClient).Result: The God app creates a SimpleDnsServer instance for . on port 5000, starts its thread, and creates the file dns_storage/5000.dns.Add a New Record: The admin wants to add an A record for www.example.com with the IP 1.2.3.4.Action: In the "Add Record" panel, the admin enters:Record Name: www.example.com.Record Type: AData (IP): 1.2.3.4Result (This is the magic): The God app's getOrCreateServer() logic kicks in:It determines the record www.example.com. belongs to the zone example.com..It calls getOrCreateServer("example.com."). This server doesn't exist.It determines the parent is com.. It calls getOrCreateServer("com."). This server also doesn't exist.It determines the parent is .. It calls getOrCreateServer("."). This server is running.The recursion unwinds:A new server for com. is created on an auto-assigned port (e.g., 5100).An NS record (com. -> 127.0.0.1:5100) is added to the Root (.) server (in 5000.dns).A new server for example.com. is created on port 5101.An NS record (example.com. -> 127.0.0.1:5101) is added to the com. server (in 5100.dns).Finally, the original A record (www.example.com. -> 1.2.3.4) is added to the example.com. server (in 5101.dns).At this point, the server network is fully configured and linked, all from a single "Add Record" command.Part 2: The Query (User using DnsClientGui.java)Start the Client: A user launches the DnsClientGui (java org.ju.DnsClientGui).Make a Query: The user types www.example.com. and clicks "Resolve".The Iterative Flow:Query 1 (to Root): The SimpleDnsClient (client logic) sends a query for www.example.com. to the hardcoded Root Server (127.0.0.1:5000).Response 1 (Referral): The Root Server (port 5000) searches its file (5000.dns). It doesn't find www.example.com., but it finds a closer match: the NS record for com.. It sends a referral back: "I don't know, but ask the com. server at 127.0.0.1:5100."Query 2 (to TLD): The client receives this. The log table updates. It sends a new query for www.example.com. to the com. server (port 5100).Response 2 (Referral): The com. server (port 5100) searches its file (5100.dns). It finds the NS record for example.com.. It sends a referral: "I don't know, but ask example.com. at 127.0.0.1:5101."Query 3 (to Authoritative): The client receives this and sends a new query to the example.com. server (port 5101).Response 3 (Answer): The example.com. server (port 5101) searches its file (5101.dns). It finds an exact match: the A record for www.example.com.. It sends an authoritative answer back: "Success! The IP is 1.2.3.4."Final Result: The SimpleDnsClient returns the final IP to the DnsClientGui, which displays 1.2.3.4 in the result box.How to UsePrerequisitesJava JDK (11 or higher)slf4j (for logging)CompilationCompile all .java files:# Navigate to the project's root directory (where org/ is)
+Recursive DNS Simulator
+
+A Java-based system that simulates the full iterative DNS resolution process, complete with:
+
+A graphical iterative DNS client
+
+A “God-view” server dashboard that creates/manages DNS servers
+
+Persistent, file-based DNS records
+
+Automatic recursive creation of parent domain servers
+
+Dynamic loading of records on every query (no server restart needed)
+
+This system mirrors how real DNS works—from root, to TLD, to authoritative servers.
+
+🚀 Features
+✔ Iterative DNS Client
+
+A Swing GUI (DnsClientGui) that shows each referral step during query resolution.
+
+✔ Server Management Dashboard ("God")
+
+A Swing GUI (God) that can:
+
+Create new DNS servers
+
+Start servers from persisted storage
+
+Add DNS records
+
+Trigger auto-creation of parent domain servers
+
+✔ Persistent Storage
+
+Each server stores its records in:
+
+dns_storage/<port>.dns
+
+
+Example:
+
+dns_storage/5000.dns
+dns_storage/5100.dns
+
+✔ Automatic Recursive Server Creation
+
+If you add:
+
+www.a.b.com → 1.2.3.4
+
+
+The system automatically creates:
+
+b.com. server
+
+a.b.com. server
+
+Links each server with proper NS records
+
+Adds the final A record to the authoritative zone
+
+✔ Dynamic Read-On-Query
+
+Servers do NOT cache DNS files in memory. Every query triggers:
+
+Reading the .dns file
+
+Building a temporary in-memory map
+
+Finding exact match or closest NS referral
+
+Rejecting the temporary map
+
+This ensures real-time updates to DNS behavior.
+
+🧠 System Architecture
+DnsClientGui → Root Server (.) → TLD Server (com.) → Domain Server (example.com.)
+
+Example flow for www.example.com.
+
+Client queries Root (5000)
+
+Root refers to com. server
+
+com. refers to example.com. server
+
+example.com. returns authoritative A record
+
+Each step appears in the GUI table.
+
+📦 Project Structure
+org/
+ └── ju/
+      ├── God.java
+      ├── DnsClientGui.java
+      ├── SimpleDnsServer.java
+      ├── SimpleDnsClient.java
+      ├── model/
+      │     ├── DnsResourceRecord.java
+      │     └── ...
+      └── util/
+            ├── DnsRecordStore.java
+            └── ...
+dns_storage/
+
+🔧 Prerequisites
+
+Java 11 or higher
+
+slf4j (API + simple binding)
+
+🏗 Compile
+
+Navigate to project root and run:
+
 javac org/ju/*.java org/ju/model/*.java org/ju/util/*.java
-Step 1: Run the Server DashboardRun the God class to start the server management GUI:java org.ju.God
-Step 2: Initialize the DNS NetworkYou must start the Root server first.On first-ever run:In the "Create New Server" section:New Server Name (Zone): .New Server Port: 5000Click "Create & Start Server".On subsequent runs:Simply click the "Start Servers From Storage" button. This will scan the dns_storage directory and start servers for all existing .dns files (including 5000.dns).Step 3: Add a New DomainNow you can add any domain you want.In the "Add Record" section (the top one):Record Name: www.my-cool-site.org. (The final . is important!)Record Type: AData (IP): 10.20.30.40Click "Add Record".The log will show the system recursively creating the org. server, then the my-cool-site.org. server, and finally adding your A record.Step 4: Run the ClientIn a new terminal, run the DnsClientGui class:java org.ju.DnsClientGui
-Step 5: Resolve Your DomainIn the client GUI, type the domain you just created: www.my-cool-site.org.Click "Resolve".The result 10.20.30.40 will appear, and the log table below will show the full iterative path (e.g., . -> org. -> my-cool-site.org.).Data Structures and PersistenceCore In-Memory Data Structures (God.java)The God dashboard maintains the state of all running servers:List<SimpleDnsServer> servers: A list of the active SimpleDnsServer objects. This is used to find servers by name/port.List<Thread> serverThreads: A list of the corresponding Thread object for each server, allowing them to run in parallel.Persistent On-Disk Storage (DnsRecordStore.java)This is the core of the persistence model.Directory: All data is stored in a directory named dns_storage.File: Each running SimpleDnsServer is associated with one file, named after its port.Example: dns_storage/5000.dns (for the Root server)Example: dns_storage/5100.dns (for the com. server)File Format: The file is a simple custom CSV (Comma Separated Values) format:name,type_id,ip_address,portNS Record Example: com.,2,127.0.0.1,5100A Record Example: www.example.com.,1,1.2.3.4,0 (The port is 0 as it's not needed)Dynamic Read-on-QueryThe DnsRecordStore employs a specific design for simplicity and real-time updates:It does not keep an in-memory map of its records.When a query arrives, the findClosestMatch() method is called.This method reads the entire .dns file from disk at that moment.It parses all lines into a temporary Map<String, List<DnsResourceRecord>>.It uses this temporary map to find the answer (either an exact match or a referral).The temporary map is then discarded.This design is simple and robust: when the God GUI appends a new record to a .dns file, the corresponding SimpleDnsServer will find it on the very next query it receives, no restart or complex IPC needed.
+
+▶ Step-By-Step Usage Guide
+Step 1 — Run the Server Dashboard
+java org.ju.God
+
+First-ever run:
+
+Create Root server:
+
+Field	Value
+Name	.
+Port	5000
+
+Click Create & Start Server.
+
+Subsequent runs:
+
+Click Start Servers From Storage
+→ The dashboard scans dns_storage/ and starts all servers.
+
+Step 2 — Add a Domain
+
+Example:
+
+Field	Value
+Record Name	www.my-cool-site.org.
+Record Type	A
+Data	10.20.30.40
+
+After clicking Add Record, the system will:
+
+Create org. server (if missing)
+
+Create my-cool-site.org. server
+
+Add NS referrals to parent servers
+
+Add your final A record
+
+All automatically.
+
+Step 3 — Run the DNS Client
+java org.ju.DnsClientGui
+
+Step 4 — Resolve a Domain
+
+In the GUI, type:
+
+www.my-cool-site.org.
+
+
+Click Resolve.
+
+You will see:
+
+Full iterative path (. → org. → my-cool-site.org.)
+
+Final IP result: 10.20.30.40
+
+📂 Persistence Format
+
+Each .dns file contains:
+
+name,type_id,ip_address,port
+
+
+Examples:
+
+NS Record
+com.,2,127.0.0.1,5100
+
+A Record
+www.example.com.,1,1.2.3.4,0
+
+🧬 Core Components
+God.java
+
+Tracks all running servers
+
+Maintains:
+
+List<SimpleDnsServer> servers
+
+List<Thread> serverThreads
+
+Implements recursive server creation:
+
+example.com. → creates com. → creates . (root already exists)
+
+DnsRecordStore.java
+
+Handles persistence.
+
+Key properties:
+
+No memory caching
+
+Reads .dns file on every query
+
+Creates a temporary map
+
+Finds exact or closest NS match
+
+Discards map immediately
+
+This guarantees real-time consistency.
+
+🖥 How DNS Resolution Works in This System (Detailed)
+
+Given query: www.example.com.
+
+1. Query Root (.) at port 5000
+
+Root returns:
+
+Refer to com. at 127.0.0.1:5100
+
+2. Query com. server at port 5100
+
+TLD returns:
+
+Refer to example.com. at 127.0.0.1:5101
+
+3. Query example.com. at port 5101
+
+Authoritative server returns final A record:
+
+1.2.3.4
+
+✔ Summary
+
+This system provides:
+
+Full DNS server hierarchy simulation
+
+Automatic server creation and linking
+
+Persistent storage
+
+GUI tooling for both client and admin
+
+Real-world iterative DNS behavior
+
+If you want, I can also create:
+
+✅ A diagram/image of the DNS workflow
+✅ A Quickstart section
+✅ A Troubleshooting section
+✅ A JAR packaging README
+✅ A Dockerized setup
